@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Categorization Game</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f0f0f0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+        }
+        #game {
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 1200px;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        h1 {
+            color: #333;
+            font-size: 2.5em;
+            margin: 0;
+        }
+        #score {
+            font-size: 24px;
+            margin: 10px 0;
+            font-weight: bold;
+            color: #333;
+        }
+        #controls {
+            margin: 20px 0;
+            display: flex;
+            justify-content: center;
+        }
+        #controls button {
+            font-size: 16px;
+            padding: 12px 24px;
+            margin: 0 10px;
+            border: none;
+            border-radius: 8px;
+            background-color: #3498db;
+            color: #fff;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.3s;
+        }
+        #controls button:hover {
+            background-color: #2980b9;
+        }
+        #controls button:active {
+            transform: scale(0.95);
+        }
+        #stockContainer {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 30px;
+            justify-content: center;
+        }
+        .stock {
+            padding: 20px;
+            border-radius: 12px;
+            color: white;
+            text-align: center;
+            cursor: grab;
+            width: 140px;
+            height: 100px;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s, width 0.3s, height 0.3s;
+            font-size: 16px;
+            line-height: 1.2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .stock:active {
+            cursor: grabbing;
+        }
+        .stock.incorrect {
+            background-color: #e74c3c !important;
+            cursor: not-allowed;
+        }
+        .stock.correct {
+            background-color: #2ecc71 !important;
+            cursor: not-allowed;
+        }
+        .dragging {
+            opacity: 0.6;
+        }
+        #categories {
+            display: flex;
+            gap: 40px;
+            margin-bottom: 20px;
+            justify-content: center;
+        }
+        .basket-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .basket {
+            background-color: #3498db;
+            width: 320px;
+            height: 240px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+            position: relative;
+            overflow: hidden;
+            border: 4px dashed #fff;
+            transition: background-color 0.3s;
+        }
+        .basket.commoditiesBasket {
+            background-color: #f39c12;
+        }
+        .basket.equityBasket {
+            background-color: #e74c3c;
+        }
+        .basket.bondsBasket {
+            background-color: #9b59b6;
+        }
+        .basket-label {
+            margin-bottom: 10px;
+            font-weight: bold;
+            font-size: 18px;
+            color: #fff;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.4);
+        }
+        #result {
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+            margin-top: 10px;
+            text-align: center;
+        }
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 20px;
+            width: 80%;
+            max-width: 600px;
+            text-align: center;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        }
+        .modal-content h2 {
+            margin-top: 0;
+            color: #333;
+        }
+        .modal-content button {
+            margin-top: 20px;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            background-color: #3498db;
+            color: #fff;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.3s;
+        }
+        .modal-content button:hover {
+            background-color: #2980b9;
+        }
+        .modal-content button:active {
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+<body>
+    <div id="game">
+        <h1>Stock Categorization Game</h1>
+        <div id="score">Score: 0</div>
+        <div id="controls">
+            <button id="resetButton">Reset</button>
+            <button id="rulesButton">Rules</button>
+        </div>
+        <div id="stockContainer"></div>
+        <div id="categories">
+            <div class="basket-container">
+                <div class="basket-label">Commodities</div>
+                <div class="basket commoditiesBasket" id="commoditiesBasket" data-category="commodities"></div>
+            </div>
+            <div class="basket-container">
+                <div class="basket-label">Equity</div>
+                <div class="basket equityBasket" id="equityBasket" data-category="equity"></div>
+            </div>
+            <div class="basket-container">
+                <div class="basket-label">Bonds</div>
+                <div class="basket bondsBasket" id="bondsBasket" data-category="bonds"></div>
+            </div>
+        </div>
+        <div id="result"></div>
+    </div>
+
+    <!-- Rules Modal -->
+    <div id="rulesModal" class="modal">
+        <div class="modal-content">
+            <h2>Game Rules</h2>
+            <p>Welcome to the Stock Categorization Game!</p>
+            <p>Your goal is to drag the stock cards to the correct basket. Each correct placement earns you points, while incorrect placements will deduct points. Good luck!</p>
+            <button id="closeRulesButton">Close</button>
+        </div>
+    </div>
+
+    <script>
+       document.addEventListener('DOMContentLoaded', () => {
+    const allStocks = [
+        { name: 'Gold', category: 'commodities', color: '#f39c12' },
+        { name: 'Silver', category: 'commodities', color: '#95a5a6' },
+        { name: 'Oil', category: 'commodities', color: '#34495e' },
+        { name: 'Copper', category: 'commodities', color: '#e67e22' },
+        { name: 'Platinum', category: 'commodities', color: '#bdc3c7' },
+        { name: 'MRF', category: 'equity', color: '#e74c3c' },
+        { name: 'Apple', category: 'equity', color: '#2ecc71' },
+        { name: 'Zomato', category: 'equity', color: '#3498db' },
+        { name: 'Microsoft', category: 'equity', color: '#9b59b6' },
+        { name: 'Tesla', category: 'equity', color: '#f39c12' },
+        { name: 'Municipal bonds', category: 'bonds', color: '#9b59b6' },
+        { name: 'Treasury bonds', category: 'bonds', color: '#8e44ad' },
+        { name: 'Corporate bonds', category: 'bonds', color: '#2980b9' },
+        { name: 'Government bonds', category: 'bonds', color: '#d35400' },
+        { name: 'Convertible bonds', category: 'bonds', color: '#e67e22' },
+        { name: 'High-Yield bonds', category: 'bonds', color: '#e74c3c' },
+        { name: 'Zero-Coupon bonds', category: 'bonds', color: '#f39c12' }
+    ];
+
+    let score = 0;
+    let stockContainer = document.getElementById('stockContainer');
+
+    function createStockElement(stock) {
+        const stockElement = document.createElement('div');
+        stockElement.classList.add('stock');
+        stockElement.draggable = true;
+        stockElement.style.backgroundColor = stock.color;
+        stockElement.textContent = stock.name;
+        stockElement.dataset.category = stock.category;
+
+        // Add drag event listeners
+        stockElement.addEventListener('dragstart', handleDragStart);
+        stockElement.addEventListener('dragend', handleDragEnd);
+
+        return stockElement;
+    }
+
+    function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+    }
+
+    function initializeStocks() {
+        stockContainer.innerHTML = ''; // Clear existing stocks
+        shuffleArray(allStocks);
+        allStocks.forEach(stock => {
+            stockContainer.appendChild(createStockElement(stock));
+        });
+    }
+
+    function resetGame() {
+        score = 0;
+        document.getElementById('score').textContent = `Score: ${score}`;
+        document.getElementById('result').textContent = '';
+        initializeStocks();
+        document.querySelectorAll('.basket').forEach(basket => {
+            basket.innerHTML = '';
+        });
+    }
+
+    function handleDragStart(event) {
+        event.dataTransfer.setData('text/plain', event.target.dataset.category);
+        event.target.classList.add('dragging');
+    }
+
+    function handleDragEnd(event) {
+        event.target.classList.remove('dragging');
+    }
+
+    function handleDragOver(event) {
+        event.preventDefault();
+    }
+
+    function handleDrop(event) {
+        event.preventDefault();
+        const category = event.dataTransfer.getData('text/plain');
+        const basketCategory = event.target.dataset.category;
+        const draggedElement = document.querySelector('.dragging');
+
+        if (event.target.classList.contains('basket')) {
+            if (basketCategory === category) {
+                draggedElement.classList.add('correct');
+                draggedElement.style.transform = 'scale(0.8)';
+                draggedElement.style.width = '100px';
+                draggedElement.style.height = '60px';
+                score += 10;
+                document.getElementById('result').textContent = `Correct! Your score is ${score}.`;
+            } else {
+                draggedElement.classList.add('incorrect');
+                draggedElement.style.transform = 'scale(0.8)';
+                draggedElement.style.width = '100px';
+                draggedElement.style.height = '60px';
+                score -= 5;
+                document.getElementById('result').textContent = `Incorrect! Your score is ${score}.`;
+            }
+            document.getElementById('score').textContent = `Score: ${score}`;
+            event.target.appendChild(draggedElement);
+        }
+    }
+
+    function showRulesModal() {
+        document.getElementById('rulesModal').style.display = 'flex';
+    }
+
+    function hideRulesModal() {
+        document.getElementById('rulesModal').style.display = 'none';
+    }
+
+    document.getElementById('resetButton').addEventListener('click', resetGame);
+    document.getElementById('rulesButton').addEventListener('click', showRulesModal);
+    document.getElementById('closeRulesButton').addEventListener('click', hideRulesModal);
+
+    // Initialize game on page load
+    initializeStocks();
+    document.querySelectorAll('.basket').forEach(basket => {
+        basket.addEventListener('dragover', handleDragOver);
+        basket.addEventListener('drop', handleDrop);
+    });
+});
+
+    </script>
+</body>
+</html>
